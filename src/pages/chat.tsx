@@ -1,5 +1,4 @@
-// pages/agentChat.tsx
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import useSWR from 'swr';
 import axios from 'axios';
 
@@ -8,12 +7,38 @@ const fetcher = (url: string) => axios.get(url).then(res => res.data);
 const AgentChat = () => {
   const { data, error, mutate } = useSWR('/api/messages', fetcher);
   const [selectedChat, setSelectedChat] = useState<any>(null);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState<any>('');
+  const ws = useRef<WebSocket | null>(null);
+
+  useEffect(() => {
+    // Connect to WebSocket server
+    ws.current = new WebSocket('ws://localhost:3000');
+
+    ws.current.onopen = () => {
+      console.log('WebSocket connected');
+    };
+
+    ws.current.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      console.log('WebSocket message received:', message);
+      mutate(); // Refresh the messages
+    };
+
+    ws.current.onclose = () => {
+      console.log('WebSocket disconnected');
+    };
+
+    return () => {
+      if (ws.current) {
+        ws.current.close();
+      }
+    };
+  }, []);
 
   const handleSendMessage = async () => {
     if (selectedChat && message.trim()) {
       await axios.post('/api/sendMessage', {
-        chatId: selectedChat.chatId as any,
+        chatId: selectedChat.chatId,
         message,
       });
       setMessage('');
@@ -37,7 +62,6 @@ const AgentChat = () => {
               cursor: 'pointer',
               backgroundColor: selectedChat?.chatId === chat.chatId ? '#f0f0f0' : 'transparent',
             }}
-            className={`${selectedChat?.chatId === chat.chatId ? 'bg-gray-200 text-black' : ''}`}
           >
             {chat.username || `User ${chat.chatId}`}
           </div>
@@ -57,12 +81,11 @@ const AgentChat = () => {
             <div style={{ marginTop: '1rem' }}>
               <input
                 type="text"
-                className='text-black'
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 style={{ width: '80%', padding: '0.5rem' }}
               />
-              <button className='border' onClick={handleSendMessage} style={{ padding: '0.5rem 1rem', marginLeft: '1rem' }}>
+              <button onClick={handleSendMessage} style={{ padding: '0.5rem 1rem', marginLeft: '1rem' }}>
                 Send
               </button>
             </div>
