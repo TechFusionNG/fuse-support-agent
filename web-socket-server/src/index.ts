@@ -1,11 +1,11 @@
 import { WebSocketServer } from 'ws';
-import dotenv from 'dotenv';
+// import * as dotenv from 'dotenv';
 import express from 'express';
 
 
-dotenv.config();
+// dotenv.config();
 
-const PORT = process.env.PORT || 8080;
+const PORT = 8080;
 const app = express();
 const wss = new WebSocketServer({ port: PORT as number });
 
