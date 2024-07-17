@@ -8,32 +8,8 @@ const AgentChat = () => {
   const { data, error, mutate } = useSWR('/api/messages', fetcher);
   const [selectedChat, setSelectedChat] = useState<any>(null);
   const [message, setMessage] = useState<any>('');
-  const ws = useRef<WebSocket | null>(null);
 
-  useEffect(() => {
-    // Connect to WebSocket server
-    ws.current = new WebSocket('ws://localhost:3000');
-
-    ws.current.onopen = () => {
-      console.log('WebSocket connected');
-    };
-
-    ws.current.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      console.log('WebSocket message received:', message);
-      mutate(); // Refresh the messages
-    };
-
-    ws.current.onclose = () => {
-      console.log('WebSocket disconnected');
-    };
-
-    return () => {
-      if (ws.current) {
-        ws.current.close();
-      }
-    };
-  }, []);
+;
 
   const handleSendMessage = async () => {
     if (selectedChat && message.trim()) {
