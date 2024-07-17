@@ -19,7 +19,7 @@ const AgentChat = () => {
     };
 
     ws.current.onmessage = (event) => {
-      const message = JSON.parse(event.data);
+      const message =(event.data);
       console.log('WebSocket message received:', message);
       mutate(); // Refresh the messages
     };
