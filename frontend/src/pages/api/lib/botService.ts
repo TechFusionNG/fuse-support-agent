@@ -4,6 +4,7 @@
 const TelegramBot = require('node-telegram-bot-api');
 
 console.log('TRIGGER')
+console.log(process.env.NEXT_PUBLIC_ENV)
 const TELEGRAM_TOKEN = process.env.NEXT_PUBLIC_ENV==='development' ? process.env.NEXT_PUBLIC_TELEGRAM_BOT_TOKEN_DEV : process.env.NEXT_PUBLIC_TELEGRAM_BOT_TOKEN;
 
 if (!TELEGRAM_TOKEN) {
