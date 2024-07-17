@@ -1,0 +1,23 @@
+{
+    "version": 2,
+    "builds": [
+      {
+        "src": "web-socket-server/package.json",
+        "use": "@vercel/node",
+        "config": {
+          "includeFiles": [
+            "web-socket-server/src/**/*",
+            "web-socket-server/tsconfig.json",
+            "web-socket-server/package.json"
+          ]
+        }
+      }
+    ],
+    "routes": [
+      {
+        "src": "/(.*)",
+        "dest": "/web-socket-server/dist/index.js"
+      }
+    ]
+  }
+  
