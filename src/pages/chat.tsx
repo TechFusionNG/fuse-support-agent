@@ -62,6 +62,8 @@ const AgentChat = () => {
               cursor: 'pointer',
               backgroundColor: selectedChat?.chatId === chat.chatId ? '#f0f0f0' : 'transparent',
             }}
+            className={`${selectedChat?.chatId === chat.chatId ? 'text-black' : ''}`}
+
           >
             {chat.username || `User ${chat.chatId}`}
           </div>

@@ -2,8 +2,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next/types';
 import { sendMessage } from './lib/botService';
 
-export default async (req: NextApiRequest, res: NextApiResponse) => {
-    console.log('TRIGGER'   )
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+    console.log('TRIGGER');
   if (req.method === 'POST') {
     const { chatId, message } = req.body;
     
@@ -17,3 +17,5 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     res.status(405).json({ error: 'Method not allowed' });
   }
 };
+
+export default handler;
