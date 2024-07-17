@@ -60,7 +60,7 @@ const AgentChat = () => {
             style={{
               padding: '0.5rem',
               cursor: 'pointer',
-              backgroundColor: selectedChat?.chatId === chat.chatId ? '#f0f0f0' : 'white',
+              backgroundColor: selectedChat?.chatId === chat.chatId ? '#f0f0f0' : 'transparent',
             }}
             className={`${selectedChat?.chatId === chat.chatId ? 'text-black' : ''}`}
           >
@@ -83,10 +83,11 @@ const AgentChat = () => {
               <input
                 type="text"
                 value={message}
+                className='text-black'
                 onChange={(e) => setMessage(e.target.value)}
                 style={{ width: '80%', padding: '0.5rem' }}
               />
-              <button onClick={handleSendMessage} style={{ padding: '0.5rem 1rem', marginLeft: '1rem' }}>
+              <button onClick={handleSendMessage} className='border' style={{ padding: '0.5rem 1rem', marginLeft: '1rem' }}>
                 Send
               </button>
             </div>
