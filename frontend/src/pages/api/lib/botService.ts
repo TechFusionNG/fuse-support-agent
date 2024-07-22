@@ -1,5 +1,4 @@
-// import TelegramBot from 'node-telegram-bot-api';
-
+import { convex, api } from '../../../../convex';
 const TelegramBot = require('node-telegram-bot-api');
 
 let bot: typeof TelegramBot | null = null;
@@ -27,12 +26,43 @@ const initializeBot = () => {
     console.error('Polling error:', error);
   });
 
-  bot.on('message', (message: any) => {
+  bot.on('message', async (message: any) => {
     console.log('Received message:', message);
-
     const chatId = message.chat.id;
-    const response = `You said: ${message.text}`;
+    const userName = message.chat.username || 'Anonymous';
+    const groupName = 'YourGroupName'; // Replace with your logic to determine the group name
+    const timestamp = Date.now();
 
+    let user:any = await convex.query(api.users.getUserByToken, { tokenIdentifier: chatId.toString() });
+    const messageType:any = message.text ? 'text' : (message.photo ? 'image' : (message.voice ? 'audio' : 'unknown'));
+    let content = message.text || '';
+
+    if (messageType === 'image') {
+      content = message.photo[0].file_id;
+    } else if (messageType === 'audio') {
+      content = message.voice.file_id;
+    }
+
+    if (!user) {
+      const newUserId = await convex.mutation(api.users.addUser, {
+        name: userName,
+        tokenIdentifier: chatId.toString(),
+        groups: [groupName],
+      });
+      user = { _id: newUserId };
+    }
+
+    // Store the user message
+    await convex.mutation(api.messages.addMessage, {
+      userId: user._id,
+      from: 'user',
+      type: messageType,
+      content,
+      timestamp,
+      assignedAgentId: null,
+    });
+
+    const response = `You said: ${message.text}`;
     console.log('Sending response:', response);
 
     bot.sendMessage(chatId, response).catch((error: any) => {
@@ -41,38 +71,42 @@ const initializeBot = () => {
   });
 
   console.log('Telegram Bot Service Initialized and polling started');
-  return bot;
-};
 
-export const sendMessage = async (
-  chatId: number,
-  message: string,
-  options?: any
-) => {
-  if (!bot) initializeBot();
-  console.log('Sending message from UI:', message);
-  await bot!.sendMessage(chatId, message, options);
-};
+  // Define the functions to be exported
 
-export const getCommonGroups = async (userId: number): Promise<number[]> => {
-  if (!bot) initializeBot();
-  const commonGroups: number[] = [];
-  const groups = new Set<number>(); // Add logic to populate this set
+  const sendMessage = async (
+    chatId: number,
+    message: string,
+    options?: any
+  ) => {
+    console.log('Sending message from UI:', message);
+    await bot!.sendMessage(chatId, message, options);
+  };
 
-  for (const groupId of groups) {
-    try {
-      const botMember = await bot!.getChatMember(groupId, bot!.id);
-      const userMember = await bot!.getChatMember(groupId, userId);
+  const getCommonGroups = async (userId: number): Promise<number[]> => {
+    const commonGroups: number[] = [];
+    const groups = new Set<number>(); // Add logic to populate this set
 
-      if (botMember.status !== 'left' && userMember.status !== 'left') {
-        commonGroups.push(groupId);
+    for (const groupId of groups) {
+      try {
+        const botMember = await bot!.getChatMember(groupId, bot!.id);
+        const userMember = await bot!.getChatMember(groupId, userId);
+
+        if (botMember.status !== 'left' && userMember.status !== 'left') {
+          commonGroups.push(groupId);
+        }
+      } catch (error) {
+        console.error(`Error checking membership for group ${groupId}:`, error);
       }
-    } catch (error) {
-      console.error(`Error checking membership for group ${groupId}:`, error);
     }
-  }
 
-  return commonGroups;
+    return commonGroups;
+  };
+
+  return { sendMessage, getCommonGroups };
 };
 
+// Initialize the bot and export the functions
+const botInstance = initializeBot();
+export const { sendMessage, getCommonGroups } = botInstance;
 export default initializeBot;

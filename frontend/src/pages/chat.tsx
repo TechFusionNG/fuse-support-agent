@@ -1,70 +1,53 @@
-import { useState, useEffect, useRef } from 'react';
-import useSWR from 'swr';
+import { useState } from 'react';
+import { useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import axios from 'axios';
 
-const fetcher = (url: string) => axios.get(url).then(res => res.data);
-
 const AgentChat = () => {
-  const { data, error, mutate } = useSWR('/api/messages', fetcher);
   const [selectedChat, setSelectedChat] = useState<any>(null);
   const [message, setMessage] = useState('');
-  const ws = useRef<WebSocket | null>(null);
+  const [messageType, setMessageType] = useState('text');
+  const [agentId, setAgentId] = useState(null); // Set this from your auth system
 
-  useEffect(() => {
-    // Connect to WebSocket server
-    ws.current = new WebSocket('https://fuse-support-api.onrender.com');
+  const users = useQuery(api.users.getAllUsers) || [];
+  const messagesQuery = useQuery(
+    api.messages.getMessagesByUserId,
+    selectedChat ? { userId: selectedChat._id } : 'skip'
+  );
 
-    ws.current.onopen = () => {
-      console.log('WebSocket connected');
-    };
-
-    ws.current.onmessage = (event) => {
-      const message =(event.data);
-      console.log('WebSocket message received:', message);
-      mutate(); // Refresh the messages
-    };
-
-    ws.current.onclose = () => {
-      console.log('WebSocket disconnected');
-    };
-
-    return () => {
-      if (ws.current) {
-        ws.current.close();
-      }
-    };
-  }, []);
+  const messages = selectedChat ? messagesQuery || [] : [];
 
   const handleSendMessage = async () => {
     if (selectedChat && message.trim()) {
       await axios.post('/api/sendMessage', {
-        chatId: selectedChat.chatId,
-        message,
+        chatId: selectedChat.tokenIdentifier,
+        userId: selectedChat._id,
+        type: messageType,
+        content: message,
+        agentTokenIdentifier: 'gabby',
       });
+
+      // Add the message to the UI
       setMessage('');
-      mutate(); // Refresh the messages
     }
   };
-
-  if (error) return <div>Failed to load</div>;
-  if (!data) return <div>Loading...</div>;
 
   return (
     <div style={{ display: 'flex', height: '100vh' }}>
       <div style={{ width: '30%', borderRight: '1px solid #ccc', padding: '1rem' }}>
         <h2>Chats</h2>
-        {data.messages.map((chat: any) => (
+        {users.map((user) => (
           <div
-            key={chat.chatId}
-            onClick={() => setSelectedChat(chat)}
+            key={user._id}
+            onClick={() => setSelectedChat(user)}
             style={{
               padding: '0.5rem',
               cursor: 'pointer',
-              backgroundColor: selectedChat?.chatId === chat.chatId ? '#f0f0f0' : 'transparent',
+              backgroundColor: selectedChat?._id === user._id ? '#f0f0f0' : 'transparent',
             }}
-            className={`${selectedChat?.chatId === chat.chatId ? 'text-black' : ''}`}
+            className={selectedChat?._id === user._id ? 'text-black' : ''}
           >
-            {chat.username || `User ${chat.chatId}`}
+            {user.name || `User ${user.tokenIdentifier}`}
           </div>
         ))}
       </div>
@@ -73,21 +56,28 @@ const AgentChat = () => {
         {selectedChat ? (
           <>
             <div style={{ height: '80%', overflowY: 'auto', border: '1px solid #ccc', padding: '1rem' }}>
-              {selectedChat.messages.map((msg: any, index: number) => (
-                <div key={index} style={{ margin: '0.5rem 0' }}>
-                  <strong>{msg.from}: </strong>{msg.text}
+              {messages.map((msg, index) => (
+                <div
+                  key={index}
+                  style={{
+                    margin: '0.5rem 0',
+                    textAlign: msg.from === 'agent' ? 'right' : 'left',
+                    alignSelf: msg.from === 'agent' ? 'flex-end' : 'flex-start',
+                  }}
+                >
+                  <strong>{msg.from}: </strong>{msg.content}
                 </div>
               ))}
             </div>
             <div style={{ marginTop: '1rem' }}>
               <input
                 type="text"
-                value={message}
                 className='text-black'
+                value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 style={{ width: '80%', padding: '0.5rem' }}
               />
-              <button onClick={handleSendMessage} className='border' style={{ padding: '0.5rem 1rem', marginLeft: '1rem' }}>
+              <button className='border' onClick={handleSendMessage} style={{ padding: '0.5rem 1rem', marginLeft: '1rem' }}>
                 Send
               </button>
             </div>
